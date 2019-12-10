@@ -85,7 +85,7 @@ $$p(\beta_0,\beta_1|\sigma^2,\boldsymbol{y})=N_{d=2}(\boldsymbol{\hat\beta},\sig
 
 ```{r}
 # require(devtools)
-# install_github("https://github.com/jiang275/Gibbs")
+# devtools::install_github("https://github.com/jiang275/Gibbs", build_vignettes = TRUE)
 # library(Gibbs)
 ```
 
