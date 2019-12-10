@@ -1,0 +1,157 @@
+---
+title: "Gibbs: Gibbs Sampling for Simple Linear Regression"
+author: "Meilin Jiang"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Gibbs_sampling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(Gibbs)
+```
+
+## Motivation
+In Bayesian Statistics, obtaining posterior distributions of parameters of interests is a primary objective. However, analytical solutions to posterior distributions do not exist all the time due to required complex integration. Sampling techniques become an important method to allow us to study posterior distributions numerically. A common alternative choice is numerical approximation of integration, which provides accurate estimations, but computation issues arise as the dimension of parameters increases. For higher dimensional posterior distributions, the Method of Composition is an option when the joint distribution could be factorized into a product of a univariate distribution and a series of corresponding conditional distributions, which is not feasible in most practical cases. As a well-known Markov chain Monte Carlo (MCMC) procedure, Gibbs sampling provides a way to tackle high-dimensional distribution by sampling from full conditional distribution of each parameter.
+
+At the meantime, linear regression models play a crucial role in statistical modeling for its easiness of modeling, interpretation, and implementation. The R package "Gibbs" built was aim to offer a method of implementing Gibbs sampling of regression parameters, $\beta_0,\beta_1, and\ \sigma^2$ from a perspective of Bayesian analysis.  
+
+## Method
+Gibbs sampling iteratively generates parameters from their full conditional distributions. A full conditional distribution of x is the probability distribution of x given all other parameters of interests. For d-dimensional parameters of interest, the d parameters could be sampled in different order. In the package "Gibbs", four common Gibbs samplers are built to satisfy different needs of users.  
+
+1. Deterministic- or systematic scan Gibbs sampler:
+  
+  The d dimensions are visited in a fixed order.
+
+We pick a starting position  $\boldsymbol\theta^0=(\theta^0_1,\theta^0_2,...,\theta^0_d)^T$ and sample each parameter from its corresponding full conditional distribution repeatedly given the last available values.  
+Here is the d steps of sampling at iteration (k+1):
+  
+  - Step 1. Sample $\theta_1^{(k+1)}$ from $p(\theta_1|\theta^k_2,...,\theta^k_{(d-1)},\theta^k_d,\boldsymbol{y})$
+  
+  - Step 2. Sample $\theta_2^{(k+1)}$ from $p(\theta_2|\theta^{(k+1)}_1,\theta^k_{3},...,\theta^k_d,\boldsymbol{y})$  
+  .  
+.  
+.  
+- Step d. Sample $\theta_d^{(k+1)}$ from $p(\theta_d|\theta^{(k+1)}_1,...,\theta^{(k+1)}_{(d-1)},\boldsymbol{y})$
+  
+  2. Random-scan Gibbs sampler:  
+  The d dimensions are visited in a random order.  
+At each step, we randomly select a parameter from all parameters of interest $\boldsymbol\theta=(\theta_1,\theta_2,...,\theta_d)^T$ and sample a new value from its full conditional distributions. The step was repeated until we reach a desired number of iterations.  
+
+3. Reversible Gibbs sampler:  
+  The d dimensions are visited in a particular order and then the order is reversed.  
+For each step, we sample $(\theta_1,\theta_2,...,\theta_d)$ individually from 1 to d, and then we sample them again but form d to 1.  
+
+
+4. Block Gibbs sampler:  
+  The d dimensions are split up into m blocks of parameters with respective sizes $d_1,d_2,...,d_m$ and corresponding parameter vectors $\boldsymbol{\theta}_1,\boldsymbol{\theta}_2,...\boldsymbol{\theta}_m$. Then the distributions $p(\boldsymbol{\theta}_k|\boldsymbol{\theta}_1,...,\boldsymbol{\theta}_{k-1},\boldsymbol{\theta}_{k+1},...,\boldsymbol{\theta}_m)$,$(k=1,...,m)$ are sampled in a (most often) fixed order.  
+
+
+
+To connect Gibbs sampling to Bayesian linear regression models, consider the simple linear model below:
+  $$\boldsymbol{y}=\beta_0 + \beta_1\boldsymbol{x}+\boldsymbol{\epsilon}$$
+  where $\boldsymbol{x}=(x_1,...,x_n)^T$, $\boldsymbol{y}=(y_1,...,y_n)^T$ and $\boldsymbol{\epsilon}=(\epsilon_1,...,\epsilon_n)^T$. We assume $\epsilon_i \sim N(0,\sigma^2)$.  
+
+
+In linear regression case, it is relatively more difficult to provide a subjective prior on regression parameters comparing to an informative prior on mean or variance. A non-informative prior should be used unless there is a strong evidence on other priors. Here, a popular choice of non-informative prior is $p(\boldsymbol{\beta},\sigma^2) \propto \sigma^-2$
+  
+  To apply Gibbs sampling procedure, the full conditional distribution for each parameter is needed. Given the non-informative prior above, the full conditionals are derived as following:  
+  
+  $$p(\sigma^2|\beta_0,\beta_1,\boldsymbol{y})=Inv-\chi^2(n,s^2_{\boldsymbol{\beta}})$$
+  $$p(\beta_0|\sigma^2,\beta_1,\boldsymbol{y})=N(r_{\beta_{1}} ,\sigma^2/n)$$
+  $$p(\beta_1|\sigma^2,\beta_0,\boldsymbol{y})=N(r_{\beta_{0}} ,\sigma^2/\boldsymbol{x}^T\boldsymbol{x})$$
+  where
+$$s^2_{\boldsymbol{\beta}}=\frac{1}{n}\sum(y_i-\beta_{0}-\beta_{1}x_i)^2$$
+  $$r_{\beta_{1}}=\frac{1}{n}\sum(y_i-\beta_{1}x_i)$$
+  $$r_{\beta_{0}}=\sum(y_i-\beta_{0})x_i/\boldsymbol{x}^T\boldsymbol{x}$$
+  
+  Also, $(\beta_0,\beta_1)$ is often correlated and could be sampled together (block Gibbs sampler). The derived multivariate normal distribution and steps of sampling are listed as the following: 
+  
+  - Step 1: Sample $\sigma2$ from the full conditional specified above
+
+- Step 2: Sample vector($\beta_1, \beta_1$) from 
+$$p(\beta_0,\beta_1|\sigma^2,\boldsymbol{y})=N_{d=2}(\boldsymbol{\hat\beta},\sigma^2/\boldsymbol{x}^T\boldsymbol{x})$$
+  where $\boldsymbol{\hat\beta}$ is the maximum likelihood estimator of $\boldsymbol{\beta}$
+  
+  The package "Gibbs" consists of 8 functions that are nested within each other in order to implement different Gibbs sampler methods. Firstly, we can install the package from Github.  
+
+```{r}
+# require(devtools)
+# install_github("https://github.com/jiang275/Gibbs")
+# library(Gibbs)
+```
+
+The main function *Gibbs* is the actual function that will be applied by users. Users need to supply arguments of covariate vector x, response vector y, a method of Gibbs sampling (deterministic, random, reversible, or block). It is optional to input initial values of $\sigma^2$, $\beta_0$, and $\beta_1$. The default number of iterations B is set to be 1000, and random seed generator is 123. Based on the input arguments, a matrix "draws" of missing values NA is created with B rows and 3 columns corresponding to $\sigma^2$, $\beta_0$, and $\beta_1$. If users provided initial values for these parameters, the first row of matrix "draws" are replaced by initial values. If not, a linear model is fitted and the maximum likelihood estimators are used as initial values. Next, one of the second level functions (deterministic, random, reversible, or block) will be called based on the choice of Gibbs sampling methods. The prepared matrix "draws", x, y, B, fit (fitted linearly model), and calculated n (number of observations) will be passed as arguments to the chosen second level function. The output from the second level function is the filled matrix "draws" with sampled values, which will be the final return element of the *Gibbs* function.   
+
+
+
+## Examples
+A simulated dataset is included in the package. Two vectors, x and y, are included in the "simulated_data" data frame. It is generated from the linear model
+$$y_i = 2 + 0.7x_i +\epsilon_i $$
+  where $\epsilon_i \sim N(0,1)$
+  
+  Here is the data generation process.  
+```{r}
+set.seed(123)
+x <- rnorm(1000,8,4)
+y <- 2 + 0.7*x + rnorm(1000,0,1)
+simulated_data <- data.frame(x,y)
+```
+
+To access the dataset, simply type:
+  ```{r}
+data(simulated_data)
+```
+
+Knowing if true underlying values $\beta_0=2,\beta_1=0.7,$ and $\sigma^2 = 1$, let us compare the performance of different Gibbs sampling on regression parameters.  
+
+The output is a matrix with B=1000 iterations of three regression parameters *$\sigma^2$, $\beta_0$, and $\beta_1$. The initial values of each parameters was chosen as 1. The posterior mean of each parameter is computed and compared with the truth.  
+
+1. Deterministic- or systematic scan Gibbs sampler:
+  ```{r}
+draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
+               sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="deterministic",B=1000)
+# posterior mean
+apply(draws, 2, mean)
+```
+
+
+2. Random-scan Gibbs sampler:  
+  ```{r}
+draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
+               sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="random",B=1000)
+# posterior mean
+apply(draws, 2, mean)
+```
+3. Reversible Gibbs sampler:  
+  ```{r}
+draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
+               sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="reversible",B=1000)
+# posterior mean
+apply(draws, 2, mean)
+```
+
+4. Block Gibbs sampler:  
+  ```{r}
+draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
+               sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="block",B=1000)
+# posterior mean
+apply(draws, 2, mean)
+```
+
+## Summary
+The package Gibbs provides a feasible way to sample parameters $\sigma^2$, $\beta_0$, and $\beta_1$ form simple linear regression models. Four types of Gibbs sampling methods (deterministic, random, reversible, or block) are available for use and comparison. In the testing case, different Gibbs sampler achieve comparably accurate estimators with a slightly better performance of block Gibbs sampler. For regression coefficients that are often correlated, it is beneficial to sample them simultaneously to account for the covariance.  More iterations (B) could be generated if higher accuracy is desired, but the cost will also bee higher. It is also recommended to discard some iterations at beginning as the burn-in period since latter part of the chin is more stable for its convergence.  
+
+
+## References
+[1] Lesaffre, E. &Lawson, A. (2012). Bayesian Biostatistics. John Wiley & Sons, Ltd. Retrieved from https://onlinelibrary.wiley.com/doi/book/10.1002/9781119942412
+
+[2] Wakefield, J. (2013). Bayesian and Frequentist Regression Methods. Springer Series in Statistics. Retrieved from https://link.springer.com/book/10.1007/978-1-4419-0925-1
