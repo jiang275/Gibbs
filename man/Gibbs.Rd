@@ -37,7 +37,7 @@ Sample B iterations of sigma2, beta0, and beta1 values from their full condition
 \examples{
 data(simulated_data)
 draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
-sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="block",B=1000)
+sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="deterministic",B=1000)
 apply(draws, 2, mean)
 }
 \references{
