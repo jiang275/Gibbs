@@ -21,7 +21,7 @@
 ##' @examples
 ##' data(simulated_data)
 ##' draws <- Gibbs(x=simulated_data$x,y=simulated_data$y,
-##' sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="block",B=1000)
+##' sigma2_initial=1, beta0_initial=1,beta1_initial=1,method="deterministic",B=1000)
 ##' apply(draws, 2, mean)
 Gibbs <- function(x, y, method = "deterministic", sigma2_initial = NA, beta0_initial = NA,
     beta1_initial = NA, B = 1000, seed = 123) {
