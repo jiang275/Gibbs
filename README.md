@@ -2,7 +2,7 @@
 Gibbs Sampling for Simple Linear Regression
 
 ## how to install the R package
-devtools::install_github("https://github.com/jiang275/Gibbs",build_vignettes = TRUE)
+devtools::install_github("https://github.com/jiang275/Gibbs", build_vignettes = TRUE)
 
 ## example
 library(Gibbs)
